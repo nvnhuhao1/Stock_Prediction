@@ -59,7 +59,7 @@ MODEL_INFO = {
         "endpoint": aws_endpoint,
         "explainer": 'explainer.shap',
         "pipeline": 'finalized_model.tar.gz',
-         "keys": [ "MSFT", "GOOGL", "IBM", "DEXJPUS", "DEXUSUK", "SP500", "DJIA", "VIXCLS"],
+         "keys": ["AMAT","INTL","RELY", "DEXJPUS", "DEXCHUS", "SP500", "NASDAQCOM", "VIXCLS"],
         "inputs": [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ["AMAT","INTL","RELY", "DEXJPUS", "DEXCHUS", "SP500", "NASDAQCOM", "VIXCLS"]]
 }
 
@@ -139,17 +139,19 @@ with st.form("pred_form"):
     submitted = st.form_submit_button("Run Prediction")
 
 if submitted:
-    feature_names = [inp["name"] for inp in MODEL_INFO["inputs"]]
-    data_row = [user_inputs[inp["name"]] for inp in MODEL_INFO["inputs"]]
+
+    data_row = [user_inputs[k] for k in MODEL_INFO["keys"]]
     # Prepare data
     base_df = df_features
     input_df = pd.concat([base_df, pd.DataFrame([data_row], columns=base_df.columns)])
+    
     res, status = call_model_api(input_df)
     if status == 200:
         st.metric("Prediction Result", res)
         display_explanation(input_df,session, aws_bucket)
     else:
         st.error(res)
+
 
 
 
