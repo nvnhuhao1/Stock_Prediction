@@ -139,7 +139,7 @@ with st.form("pred_form"):
     submitted = st.form_submit_button("Run Prediction")
 
 if submitted:
-    data_row = [user_inputs[k] for k in MODEL_INFO["inputs"]]
+    data_row = [user_inputs[k] for k in MODEL_INFO["keys"]]
     # Prepare data
     base_df = df_features
     input_df = pd.concat([base_df, pd.DataFrame([data_row], columns=base_df.columns)])
@@ -150,6 +150,7 @@ if submitted:
         display_explanation(input_df,session, aws_bucket)
     else:
         st.error(res)
+
 
 
 
