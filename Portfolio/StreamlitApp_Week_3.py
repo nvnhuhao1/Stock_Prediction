@@ -145,13 +145,14 @@ if submitted:
     # Prepare data
     base_df = df_features
     input_df = pd.concat([base_df, pd.DataFrame([data_row], columns=base_df.columns)])
-    print(input_df)
+    print("input_df: ",input_df)
     res, status = call_model_api(input_df)
     if status == 200:
         st.metric("Prediction Result", res)
         display_explanation(input_df,session, aws_bucket)
     else:
         st.error(res)
+
 
 
 
