@@ -140,6 +140,7 @@ with st.form("pred_form"):
 
 if submitted:
     feature_names = [inp["name"] for inp in MODEL_INFO["inputs"]]
+    print(feature_names.len())
     data_row = [user_inputs[inp["name"]] for inp in MODEL_INFO["inputs"]]
     # Prepare data
     base_df = df_features
@@ -151,6 +152,7 @@ if submitted:
         display_explanation(input_df,session, aws_bucket)
     else:
         st.error(res)
+
 
 
 
