@@ -20,7 +20,7 @@ def extract_features():
     
     START_DATE = (datetime.date.today() - datetime.timedelta(days=365)).strftime("%Y-%m-%d")
     END_DATE = datetime.date.today().strftime("%Y-%m-%d")
-    stk_tickers = ['MPWR','APPL']
+    stk_tickers = ['JPM','AXON']
     #ccy_tickers = ['DEXJPUS', 'DEXUSUK']
     #idx_tickers = ['SP500', 'DJIA', 'VIXCLS']
     
@@ -31,10 +31,10 @@ def extract_features():
 
     #Y = np.log(stk_data.loc[:, ('Adj Close', 'MSFT')]).diff(return_period).shift(-return_period)
     #Y.name = Y.name[-1]+'_Future'
-    Y = stk_data.loc[:, ('Adj Close', 'APPL')]
+    Y = stk_data.loc[:, ('Adj Close', 'JPM')]
     Y.name = 'APPL'
 
-    X = stk_data.loc[:, ('Adj Close', 'MPWR')]
+    X = stk_data.loc[:, ('Adj Close', 'AXON')]
     X.name = 'MPWR'
     
     #X1 = np.log(stk_data.loc[:, ('Adj Close', ('GOOGL', 'IBM'))]).diff(return_period)
