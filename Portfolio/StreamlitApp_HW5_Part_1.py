@@ -123,7 +123,7 @@ def display_explanation(input_df, session, aws_bucket):
     print(shap_values[0])
     st.subheader("🔍 Decision Transparency (SHAP)")
     fig, ax = plt.subplots(figsize=(10, 4))
-    shap.plots.waterfall(shap_values[0], max_display=10)
+    shap.plots.waterfall(shap_values[0, :, 0], max_display=10)
     st.pyplot(fig)
     # top feature 
     top_feature = pd.Series(shap_values[0].values, index=shap_values[0].feature_names).abs().idxmax()
