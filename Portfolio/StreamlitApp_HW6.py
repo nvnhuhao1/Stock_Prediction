@@ -63,8 +63,8 @@ MODEL_INFO = {
         "endpoint": aws_endpoint,
         "explainer": 'explainer_sentiment.shap',
         "pipeline": 'finalized_sentiment_model.tar.gz',
-        "keys": ['WMT','PredictedSentiment','AMZN','ADBE'],
-        "inputs": [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['WMT','PredictedSentiment','AMZN','ADBE']]
+        "keys": ['FB','WMT','AMZN','PredictedSentiment'],
+        "inputs": [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['FB','WMT','AMZN','PredictedSentiment']]
 }
 
 def load_pipeline(_session, bucket, key):
