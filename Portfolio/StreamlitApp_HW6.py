@@ -17,7 +17,7 @@ from sagemaker.deserializers import JSONDeserializer
 from sagemaker.serializers import NumpySerializer
 from sagemaker.deserializers import NumpyDeserializer
 
-from sklearn.pipeline import Pipeline
+from imblearn.pipeline import Pipeline
 import shap
 
 from joblib import dump
