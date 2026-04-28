@@ -87,8 +87,8 @@ def load_pipeline(_session, bucket, key):
         # Extract the .joblib file from the .tar.gz
     with tarfile.open(filename, "r:gz") as tar:
         tar.extractall(path=".")
-        joblib_file = [f for f in tar.getnames() if f.endswith('.joblib')][0]
-        #joblib_file = [f for f in tar.getnames() if f.endswith('.pkl')][0]
+        #joblib_file = [f for f in tar.getnames() if f.endswith('.joblib')][0]
+        joblib_file = [f for f in tar.getnames() if f.endswith('.pkl')][0]
    
 
     # Load the full pipeline
