@@ -13,8 +13,8 @@ import boto3
 import sagemaker
 from sagemaker.predictor import Predictor
 from sagemaker.serializers import CSVSerializer
-from sagemaker.serializers import JSONSerializer 
-from sagemaker.deserializers import JSONDeserializer 
+from sagemaker.serializers import JSONSerializer
+from sagemaker.deserializers import JSONDeserializer
 from sagemaker.serializers import NumpySerializer
 from sagemaker.deserializers import NumpyDeserializer
 
@@ -42,7 +42,8 @@ if project_root not in sys.path:
 file_path = os.path.join(project_root, 'Portfolio/X_train.csv')
 
 dataset = pd.read_csv(file_path)
-dataset = dataset.loc[:, ~dataset.columns.str.contains('^Unnamed')]
+dataset = dataset.drop(['Unnamed: 0'],axis=1)
+#dataset = dataset.loc[:, ~dataset.columns.str.contains('^Unnamed')]
 
 # Access the secrets
 aws_id = st.secrets["aws_credentials"]["AWS_ACCESS_KEY_ID"]
@@ -68,10 +69,10 @@ sm_session = sagemaker.Session(boto_session=session)
 
 MODEL_INFO = {
     "endpoint"  : aws_endpoint,
-    "explainer" : "explainer_fraud.shap",
-    "pipeline"  : "fine_tuned_pipeline.tar.gz",
-    "keys"      : ['TransactionAmt','addr1','addr2'],
-    "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['TransactionAmt','addr1','addr2']]
+    "explainer" : "explainer_sentiment.shap",
+    "pipeline"  : "finalized_fraud_model.tar.gz",
+    "keys"      : ['TransactionAmt','card6_freq_enc','card3','C12'],
+    "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['TransactionAmt','card6_freq_enc','card3','C12']]
 }
 
 
@@ -80,15 +81,15 @@ def load_pipeline(_session, bucket, key):
     filename=MODEL_INFO["pipeline"]
 
     s3_client.download_file(
-        Filename=filename, 
-        Bucket=bucket, 
+        Filename=filename,
+        Bucket=bucket,
         Key= f"{key}/{os.path.basename(filename)}")
         # Extract the .joblib file from the .tar.gz
     with tarfile.open(filename, "r:gz") as tar:
         tar.extractall(path=".")
-        #joblib_file = [f for f in tar.getnames() if f.endswith('.joblib')][0]
-        joblib_file = [f for f in tar.getnames() if f.endswith('.pkl')][0]
-    
+        joblib_file = [f for f in tar.getnames() if f.endswith('.joblib')][0]
+        #joblib_file = [f for f in tar.getnames() if f.endswith('.pkl')][0]
+   
 
     # Load the full pipeline
     return joblib.load(f"{joblib_file}")
@@ -100,7 +101,7 @@ def load_shap_explainer(_session, bucket, key, local_path):
     # Only download if it doesn't exist locally to save time
     if not os.path.exists(local_path):
         s3_client.download_file(Filename=local_path, Bucket=bucket, Key=key)
-        
+       
     with open(local_path, "rb") as f:
         return load(f)
         #return shap.Explainer.load(f)
@@ -111,8 +112,8 @@ def call_model_api(input_df):
     predictor = Predictor(
         endpoint_name=MODEL_INFO["endpoint"],
         sagemaker_session=sm_session,
-        serializer=JSONSerializer(), 
-        deserializer=NumpyDeserializer() 
+        serializer=JSONSerializer(),
+        deserializer=NumpyDeserializer()
     )
 
     try:
@@ -128,15 +129,20 @@ def call_model_api(input_df):
 def display_explanation(input_df, session, aws_bucket):
     explainer_name = MODEL_INFO["explainer"]
     explainer = load_shap_explainer(session, aws_bucket, posixpath.join('explainer', explainer_name),os.path.join(tempfile.gettempdir(), explainer_name))
-    
+   
     best_pipeline = load_pipeline(session, aws_bucket, 'sklearn-pipeline-deployment')
-    preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-3])
+    preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-2])
     input_df=pd.DataFrame(input_df)
     input_df_transformed = preprocessing_pipeline.transform(input_df)
-    feature_names = best_pipeline[:-2].get_feature_names_out()
-    input_df_transformed = pd.DataFrame(input_df_transformed, columns=feature_names)
+    #feature_names = best_pipeline[:-3].get_feature_names_out()
+    dataset_1 = dataset.iloc[:, 0:]
+    feature_names = dataset_1.columns[1:]
+    selector = best_pipeline.named_steps['selector']
+    selected_features = feature_names[selector.get_support()]
+    input_df_transformed = pd.DataFrame(input_df_transformed, columns=selected_features)
+    #input_df_transformed = pd.DataFrame(input_df_transformed)
     shap_values = explainer(input_df_transformed)
-    
+   
     st.subheader("🔍 Decision Transparency (SHAP)")
     fig, ax = plt.subplots(figsize=(10, 4))
     shap.plots.waterfall(shap_values[0, :, 1])  # class 1 = fraud
@@ -153,14 +159,14 @@ with st.form("pred_form"):
     st.subheader(f"Inputs")
     cols = st.columns(2)
     user_inputs = {}
-    
+   
     for i, inp in enumerate(MODEL_INFO["inputs"]):
         with cols[i % 2]:
             user_inputs[inp['name']] = st.number_input(
                 inp['name'].replace('_', ' ').upper(),
                 min_value=inp['min'], max_value=inp['max'], value=inp['default'], step=inp['step']
             )
-    
+   
     submitted = st.form_submit_button("Run Prediction")
 
 original = dataset.iloc[0:1].to_dict()
