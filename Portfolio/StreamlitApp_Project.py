@@ -69,10 +69,10 @@ sm_session = sagemaker.Session(boto_session=session)
 
 MODEL_INFO = {
     "endpoint"  : aws_endpoint,
-    "explainer" : "final_model.shap",
-    "pipeline"  : "final_model.tar.gz",
-    "keys"      : ['loan_amnt','term','int_rate','installment'],
-    "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['loan_amnt','term','int_rate','installment']]
+    "explainer" : "explainer_sentiment.shap",
+    "pipeline"  : "finalized_fraud_model.tar.gz",
+    "keys"      : ['TransactionAmt','card6_freq_enc','card3','C12'],
+    "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['TransactionAmt','card6_freq_enc','card3','C12']]
 }
 
 
@@ -87,7 +87,7 @@ def load_pipeline(_session, bucket, key):
         # Extract the .joblib file from the .tar.gz
     with tarfile.open(filename, "r:gz") as tar:
         tar.extractall(path=".")
-        joblib_file = [f for f in tar.getnames() if f.endswith('.pkl')][0]
+        joblib_file = [f for f in tar.getnames() if f.endswith('.joblib')][0]
         #joblib_file = [f for f in tar.getnames() if f.endswith('.pkl')][0]
    
 
@@ -131,21 +131,13 @@ def display_explanation(input_df, session, aws_bucket):
     explainer = load_shap_explainer(session, aws_bucket, posixpath.join('explainer', explainer_name),os.path.join(tempfile.gettempdir(), explainer_name))
    
     best_pipeline = load_pipeline(session, aws_bucket, 'sklearn-pipeline-deployment')
-    #preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-2])
-    steps_to_keep = [
-    best_pipeline.named_steps['feature_engineering'],
-    best_pipeline.named_steps['preprocessing']
-    ]
-    preprocessing_pipeline = Pipeline(steps=[
-    ('fe', steps_to_keep[0]),
-    ('pre', steps_to_keep[1])
-    ])
+    preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-2])
     input_df=pd.DataFrame(input_df)
     input_df_transformed = preprocessing_pipeline.transform(input_df)
     #feature_names = best_pipeline[:-3].get_feature_names_out()
     dataset_1 = dataset.iloc[:, 0:]
     feature_names = dataset_1.columns[1:]
-    selector = best_pipeline.named_steps['feature_selection']
+    selector = best_pipeline.named_steps['selector']
     selected_features = feature_names[selector.get_support()]
     input_df_transformed = pd.DataFrame(input_df_transformed, columns=selected_features)
     #input_df_transformed = pd.DataFrame(input_df_transformed)
